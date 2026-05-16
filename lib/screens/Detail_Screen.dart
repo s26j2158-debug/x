@@ -12,6 +12,7 @@ class DetailScreen extends StatefulWidget {
 }
 
 class _DetailScreenState extends State<DetailScreen> {
+
   final supabase = Supabase.instance.client;
 
   bool isFavorite = false;
@@ -24,6 +25,7 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   Future<void> checkFavorite() async {
+
     final user = supabase.auth.currentUser;
 
     if (user == null) {
@@ -42,8 +44,6 @@ class _DetailScreenState extends State<DetailScreen> {
         .eq('place_id', placeId)
         .maybeSingle();
 
-    if (!mounted) return;
-
     setState(() {
       isFavorite = data != null;
       loadingFav = false;
@@ -51,6 +51,7 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   Future<void> toggleFavorite() async {
+
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
@@ -64,6 +65,7 @@ class _DetailScreenState extends State<DetailScreen> {
         .maybeSingle();
 
     if (existing != null) {
+
       await supabase
           .from('favorites')
           .delete()
@@ -75,7 +77,9 @@ class _DetailScreenState extends State<DetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Removed from favorites")),
       );
+
     } else {
+
       await supabase.from('favorites').insert({
         'user_id': user.id,
         'place_id': placeId,
@@ -92,98 +96,151 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     final place = widget.place;
 
     final lat = double.tryParse(place['latitude'].toString()) ?? 0;
     final lng = double.tryParse(place['longitude'].toString()) ?? 0;
 
     return Scaffold(
+
+      backgroundColor: Colors.grey[100],
+
       appBar: AppBar(
         title: Text(place['name'] ?? ""),
         backgroundColor: Colors.teal,
       ),
+
       body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 🖼 Image
-            Image.network(place['image_url'] ?? ''),
+
+            /// 🖼 IMAGE
+            ClipRRect(
+              child: Image.network(
+                place['image_url'] ?? '',
+                height: 250,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 250,
+                    color: Colors.grey,
+                    child: const Center(
+                      child: Icon(Icons.image, size: 60),
+                    ),
+                  );
+                },
+              ),
+            ),
 
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// 📍 Name
+
+                  /// 📍 NAME
                   Text(
                     place['name'] ?? "",
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
 
                   const SizedBox(height: 10),
 
-                  /// 📝 Description
-                  Text(place['description'] ?? ""),
+                  /// 📝 DESCRIPTION
+                  Text(
+                    place['description'] ?? "",
+                    style: const TextStyle(fontSize: 16),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  /// 💰 PRICE CARD
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.attach_money),
+                      title: const Text("Price"),
+                      subtitle: Text(place['price'] ?? "Free"),
+                    ),
+                  ),
+
+                  /// 🕒 OPENING HOURS
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.access_time),
+                      title: const Text("Opening Hours"),
+                      subtitle: Text(place['opening_hours'] ?? "N/A"),
+                    ),
+                  ),
+
+                  /// 📍 LOCATION INFO
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.location_on),
+                      title: const Text("Location"),
+                      subtitle: Text(
+                        "Lat: $lat\nLng: $lng",
+                      ),
+                    ),
+                  ),
 
                   const SizedBox(height: 10),
 
-                  /// 💰 PRICE (NEW)
-                  Text(
-                    "💰 Price: ${place['price'] ?? 'N/A'}",
-                    style: const TextStyle(fontSize: 16),
-                  ),
-
-                  const SizedBox(height: 5),
-
-                  /// 🕒 OPENING HOURS (NEW)
-                  Text(
-                    "🕒 Opening Hours: ${place['opening_hours'] ?? 'N/A'}",
-                    style: const TextStyle(fontSize: 16),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// ❤️ Favorite button
+                  /// ❤️ FAVORITE
                   loadingFav
-                      ? const CircularProgressIndicator()
-                      : ElevatedButton.icon(
-                          onPressed: toggleFavorite,
-                          icon: Icon(
-                            isFavorite
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                          ),
-                          label: Text(
-                            isFavorite
-                                ? "Remove from Favorites"
-                                : "Add to Favorites",
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isFavorite ? Colors.grey : Colors.red,
+                      ? const Center(child: CircularProgressIndicator())
+                      : SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: toggleFavorite,
+                            icon: Icon(
+                              isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                            ),
+                            label: Text(
+                              isFavorite
+                                  ? "Remove from Favorites"
+                                  : "Add to Favorites",
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  isFavorite ? Colors.grey : Colors.red,
+                            ),
                           ),
                         ),
 
                   const SizedBox(height: 10),
 
-                  /// 🗺 Open map button
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => MapScreen(
-                            latitude: lat,
-                            longitude: lng,
-                            placeName: place['name'],
+                  /// 🗺 MAP BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MapScreen(
+                              latitude: lat,
+                              longitude: lng,
+                              placeName: place['name'],
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.map),
-                    label: const Text("Open Map"),
+                        );
+                      },
+                      icon: const Icon(Icons.map),
+                      label: const Text("Open Map"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                      ),
+                    ),
                   ),
                 ],
               ),

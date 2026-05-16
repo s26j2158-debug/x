@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
-class MapScreen extends StatelessWidget {
+class MapScreen extends StatefulWidget {
   final double latitude;
   final double longitude;
   final String placeName;
@@ -17,10 +17,25 @@ class MapScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final LatLng point = LatLng(latitude, longitude);
+  State<MapScreen> createState() => _MapScreenState();
+}
 
-    final title = placeName; // 👈 force English
+class _MapScreenState extends State<MapScreen> {
+
+  late final MapController mapController;
+  double currentZoom = 14;
+
+  @override
+  void initState() {
+    super.initState();
+    mapController = MapController();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    final LatLng point = LatLng(widget.latitude, widget.longitude);
+    final title = widget.placeName;
 
     return Scaffold(
       appBar: AppBar(
@@ -31,16 +46,15 @@ class MapScreen extends StatelessWidget {
 
       body: Stack(
         children: [
-          /// 🗺️ Map
+
+          /// 🗺 MAP
           FlutterMap(
+            mapController: mapController,
             options: MapOptions(
               initialCenter: point,
-              initialZoom: 14,
+              initialZoom: currentZoom,
               minZoom: 3,
               maxZoom: 18,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all,
-              ),
             ),
 
             children: [
@@ -89,6 +103,42 @@ class MapScreen extends StatelessWidget {
             ],
           ),
 
+          /// 🔍 ZOOM BUTTONS
+          Positioned(
+            right: 10,
+            bottom: 120,
+            child: Column(
+              children: [
+
+                FloatingActionButton(
+                  heroTag: "zoom_in",
+                  mini: true,
+                  onPressed: () {
+                    setState(() {
+                      currentZoom++;
+                      mapController.move(point, currentZoom);
+                    });
+                  },
+                  child: const Icon(Icons.add),
+                ),
+
+                const SizedBox(height: 10),
+
+                FloatingActionButton(
+                  heroTag: "zoom_out",
+                  mini: true,
+                  onPressed: () {
+                    setState(() {
+                      currentZoom--;
+                      mapController.move(point, currentZoom);
+                    });
+                  },
+                  child: const Icon(Icons.remove),
+                ),
+              ],
+            ),
+          ),
+
           /// 🧭 Info Card
           Positioned(
             top: 10,
@@ -119,6 +169,7 @@ class MapScreen extends StatelessWidget {
               ),
             ),
           ),
+
         ],
       ),
     );

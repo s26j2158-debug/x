@@ -2,78 +2,100 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'map_picker_screen.dart';
 
-class AddPlaceScreen extends StatefulWidget {
-  const AddPlaceScreen({super.key});
+class EditPlaceScreen extends StatefulWidget {
+
+  final dynamic place;
+
+  const EditPlaceScreen({
+    super.key,
+    required this.place,
+  });
 
   @override
-  State<AddPlaceScreen> createState() =>
-      _AddPlaceScreenState();
+  State<EditPlaceScreen> createState() =>
+      _EditPlaceScreenState();
 }
 
-class _AddPlaceScreenState
-    extends State<AddPlaceScreen> {
+class _EditPlaceScreenState
+    extends State<EditPlaceScreen> {
 
   final supabase =
       Supabase.instance.client;
 
-  final nameController =
-      TextEditingController();
+  late TextEditingController
+      nameController;
 
-  final descriptionController =
-      TextEditingController();
+  late TextEditingController
+      descriptionController;
 
-  final imageUrlController =
-      TextEditingController();
+  late TextEditingController
+      imageUrlController;
 
   bool isLoading = false;
 
-  String selectedCategory = "Fort";
+  late String selectedCategory;
 
-  String selectedOpeningHours =
-      "8 AM - 4 PM";
+  late String selectedOpeningHours;
 
-  String selectedPrice = "Free";
+  late String selectedPrice;
 
   double? latitude;
   double? longitude;
 
-  /// ➕ Add Place
-  Future<void> addPlace() async {
+  @override
+  void initState() {
+    super.initState();
+
+    final place = widget.place;
+
+    nameController =
+        TextEditingController(
+      text: place['name'] ?? "",
+    );
+
+    descriptionController =
+        TextEditingController(
+      text: place['description'] ?? "",
+    );
+
+    imageUrlController =
+        TextEditingController(
+      text: place['image_url'] ?? "",
+    );
+
+    selectedCategory =
+        place['category'] ?? "Fort";
+
+    selectedOpeningHours =
+        place['opening_hours'] ??
+            "8 AM - 4 PM";
+
+    selectedPrice =
+        place['price'] ?? "Free";
+
+    latitude =
+        double.tryParse(
+      place['latitude'].toString(),
+    );
+
+    longitude =
+        double.tryParse(
+      place['longitude'].toString(),
+    );
+  }
+
+  /// ✏️ Update Place
+  Future<void> updatePlace() async {
 
     setState(() {
       isLoading = true;
     });
 
-    if (nameController.text.isEmpty ||
-        descriptionController.text.isEmpty ||
-        imageUrlController.text.isEmpty ||
-        latitude == null ||
-        longitude == null) {
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please fill all fields and select location',
-          ),
-        ),
-      );
-
-      setState(() {
-        isLoading = false;
-      });
-
-      return;
-    }
-
     try {
-
-      final user =
-          supabase.auth.currentUser;
 
       await supabase
           .from('heritage_places')
-          .insert({
+          .update({
 
         'name':
             nameController.text,
@@ -99,20 +121,21 @@ class _AddPlaceScreenState
         'longitude':
             longitude,
 
-        'user_id':
-            user!.id,
-      });
+      }).eq(
+        'id',
+        widget.place['id'],
+      );
 
       ScaffoldMessenger.of(context)
           .showSnackBar(
         const SnackBar(
           content: Text(
-            'Place added successfully',
+            "Place updated successfully",
           ),
         ),
       );
 
-      Navigator.pop(context);
+      Navigator.pop(context, true);
 
     } catch (e) {
 
@@ -131,19 +154,21 @@ class _AddPlaceScreenState
     });
   }
 
-  /// 📝 TextField
+  /// 📝 Field
   Widget buildField(
     String label,
     TextEditingController controller,
   ) {
 
     return Padding(
+
       padding:
           const EdgeInsets.only(
         bottom: 15,
       ),
 
       child: TextField(
+
         controller: controller,
 
         onChanged: (_) {
@@ -151,14 +176,18 @@ class _AddPlaceScreenState
         },
 
         decoration: InputDecoration(
+
           labelText: label,
 
           filled: true,
           fillColor: Colors.white,
 
           border: OutlineInputBorder(
+
             borderRadius:
-                BorderRadius.circular(15),
+                BorderRadius.circular(
+              15,
+            ),
           ),
         ),
       ),
@@ -176,7 +205,7 @@ class _AddPlaceScreenState
       appBar: AppBar(
 
         title: const Text(
-          "Add Heritage Place",
+          "Edit Place",
         ),
 
         backgroundColor:
@@ -202,7 +231,9 @@ class _AddPlaceScreenState
                 color: Colors.grey[300],
 
                 borderRadius:
-                    BorderRadius.circular(20),
+                    BorderRadius.circular(
+                  20,
+                ),
               ),
 
               child:
@@ -211,6 +242,7 @@ class _AddPlaceScreenState
                           .isEmpty
 
                       ? const Center(
+
                           child: Icon(
                             Icons.image,
                             size: 60,
@@ -439,7 +471,7 @@ class _AddPlaceScreenState
 
             const SizedBox(height: 20),
 
-            /// 🗺 Select Location
+            /// 🗺 Change Location
             SizedBox(
 
               width: double.infinity,
@@ -481,7 +513,7 @@ class _AddPlaceScreenState
 
                   latitude == null
                       ? "Select Location"
-                      : "Location Selected",
+                      : "Change Location",
                 ),
 
                 style:
@@ -527,7 +559,7 @@ class _AddPlaceScreenState
 
             const SizedBox(height: 25),
 
-            /// ➕ Add Button
+            /// 💾 Update Button
             SizedBox(
 
               width: double.infinity,
@@ -538,7 +570,7 @@ class _AddPlaceScreenState
                 onPressed:
                     isLoading
                         ? null
-                        : addPlace,
+                        : updatePlace,
 
                 style:
                     ElevatedButton.styleFrom(
@@ -565,7 +597,7 @@ class _AddPlaceScreenState
 
                     : const Text(
 
-                        "Add Place",
+                        "Update Place",
 
                         style: TextStyle(
 
@@ -585,5 +617,4 @@ class _AddPlaceScreenState
       ),
     );
   }
-}  
-
+}
